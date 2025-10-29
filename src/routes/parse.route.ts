@@ -36,10 +36,26 @@ parseRouter.post('/parse', async (req: Request, res: Response) => {
                     // Можно фильтровать при необходимости
                     const filtered = result.filter((r: any) => (r.commentsCount || 0) >= 100) as any[];
 
-                    // Вызываем вебхук после завершения каждого пользователя
-                    await salebotService.sendParsingProgressWebhook(clientId, filtered.length, usernames.length, username);
+                    const enriched = await Promise.all(
+                        filtered.map(async (video: any) => {
+                            try {
+                                const transcript = await apifyService.runActor(apifyService.configureReelTranscript(video.url), clientId);
 
-                    return filtered;
+                                // если актор вернул результат корректно
+                                const text = (transcript as any)?.[0]?.result?.text ?? '';
+                                return { ...video, transcript: text };
+                            } catch (error) {
+                                // логируем, но не прерываем выполнение
+                                logger.error(`⚠️ Ошибка при транскрипции видео ${video.url}:`, error);
+                                return { ...video, transcript: '' }; // возвращаем видео без поля transcript
+                            }
+                        })
+                    );
+
+                    // Вызываем вебхук после завершения каждого пользователя
+                    await salebotService.sendParsingProgressWebhook(clientId, enriched.length, usernames.length, username);
+
+                    return enriched;
                 })
             );
 
@@ -51,25 +67,9 @@ parseRouter.post('/parse', async (req: Request, res: Response) => {
 
             logger.log(`📊 Отфильтровано и отсортировано ${sortedReels.length} видео`);
 
-            const enriched = await Promise.all(
-                reels.map(async (video: any) => {
-                    try {
-                        const transcript = await apifyService.runActor(apifyService.configureReelTranscript(video.url), clientId);
+            const sheetUrl = await sheetService.createCsv(sortedReels, `./public/${clientId}/Результаты.csv`);
 
-                        // если актор вернул результат корректно
-                        const text = (transcript as any)?.[0]?.result?.text ?? '';
-                        return { ...video, transcript: text };
-                    } catch (error) {
-                        // логируем, но не прерываем выполнение
-                        logger.error(`⚠️ Ошибка при транскрипции видео ${video.url}:`, error);
-                        return { ...video, transcript: '' }; // возвращаем видео без поля transcript
-                    }
-                })
-            );
-
-            const sheetUrl = await sheetService.createCsv(enriched, `./public/${clientId}/Результаты.csv`);
-
-            await salebotService.sendParsingSuccessWebhook(clientId, sheetUrl, enriched.length);
+            await salebotService.sendParsingSuccessWebhook(clientId, sheetUrl, sortedReels.length);
         };
 
         flow();
