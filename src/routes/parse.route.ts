@@ -5,9 +5,13 @@ import { logger } from '../utils';
 const parseRouter = Router();
 
 parseRouter.post('/parse', async (req: Request, res: Response) => {
-    const username = req.body['username'];
+    let username = req.body['username'];
     const clientId = +req.body['clientId'];
     const limit = +req.body['limit'];
+
+    if (typeof username === 'string') {
+        username = JSON.parse(username);
+    }
 
     if (!Array.isArray(username) || username.length === 0) {
         return res.status(400).json({ error: 'Invalid request: username[] обязательно' });
