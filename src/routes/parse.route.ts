@@ -33,26 +33,26 @@ parseRouter.post('/parse', async (req: Request, res: Response) => {
                     // Запускаем актор
                     const result = await apifyService.runActor(actorInput);
 
-                    // Вызываем вебхук после завершения каждого пользователя
-                    await salebotService.sendParsingProgressWebhook(username, result.length, username);
+                    // Можно фильтровать при необходимости
+                    const filtered = result.filter((r: any) => (r.commentsCount || 0) >= 100) as any[];
 
-                    return result;
+                    // Вызываем вебхук после завершения каждого пользователя
+                    await salebotService.sendParsingProgressWebhook(username, filtered.length, username);
+
+                    return filtered;
                 })
             );
 
             // Объединяем все результаты в один массив
             const reels = reelsArray.flat();
 
-            // Можно фильтровать при необходимости
-            const filtered = reels.filter((r: any) => (r.commentsCount || 0) >= 100) as any[];
-
             // Сортировка по количеству просмотров в порядке убывания
-            const sortedReels = filtered.sort((a, b) => b.videoPlayCount - a.videoPlayCount);
+            const sortedReels = reels.sort((a, b) => b.videoPlayCount - a.videoPlayCount);
 
             logger.log(`📊 Отфильтровано и отсортировано ${sortedReels.length} видео`);
 
             const enriched = await Promise.all(
-                filtered.map(async (video: any) => {
+                reels.map(async (video: any) => {
                     try {
                         const transcript = await apifyService.runActor(apifyService.configureReelTranscript(video.url));
 
