@@ -25,12 +25,12 @@ export const apifyService = {
         }
     },
 
-    configureReelScrapper(username: string[]) {
+    configureReelScrapper(username: string[], resultsLimit = 1000) {
         return {
             actor: 'apify/instagram-reel-scraper',
             input: {
                 includeSharesCount: false,
-                resultsLimit: 2,
+                resultsLimit,
                 username,
             },
         };

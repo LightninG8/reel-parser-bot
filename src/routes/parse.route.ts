@@ -7,6 +7,7 @@ const parseRouter = Router();
 parseRouter.post('/parse', async (req: Request, res: Response) => {
     const username = req.body['username'];
     const clientId = +req.body['clientId'];
+    const limit = +req.body['limit'];
 
     if (!Array.isArray(username) || username.length === 0) {
         return res.status(400).json({ error: 'Invalid request: username[] обязательно' });
@@ -20,7 +21,7 @@ parseRouter.post('/parse', async (req: Request, res: Response) => {
         const flow = async () => {
             logger.log('🔄 Запуск парсинга Instagram аккаунтов...');
 
-            const reels = await apifyService.runActor(apifyService.configureReelScrapper(username));
+            const reels = await apifyService.runActor(apifyService.configureReelScrapper(username, limit));
 
             // Можно фильтровать при необходимости
             // const filtered = reels.filter((r: any) => (r.commentsCount || 0) >= 100);
