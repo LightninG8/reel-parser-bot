@@ -1,0 +1,17 @@
+meta:
+    environment: node
+    toolchain:
+        name: npm
+        version: 22
+
+build:
+    skip: false
+    script: npm run build
+    artifacts:
+        '*': /
+
+run:
+    scriptName: dist/index.js
+    command: npm run start
+    persistenceMount: /data
+    containerPort: 3000
