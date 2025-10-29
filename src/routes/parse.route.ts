@@ -37,7 +37,7 @@ parseRouter.post('/parse', async (req: Request, res: Response) => {
                     const filtered = result.filter((r: any) => (r.commentsCount || 0) >= 100) as any[];
 
                     // Вызываем вебхук после завершения каждого пользователя
-                    await salebotService.sendParsingProgressWebhook(clientId, filtered.length, username);
+                    await salebotService.sendParsingProgressWebhook(clientId, filtered.length, usernames.length, username);
 
                     return filtered;
                 })
