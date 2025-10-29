@@ -28,9 +28,12 @@ parseRouter.post('/parse', async (req: Request, res: Response) => {
             const reels = await apifyService.runActor(apifyService.configureReelScrapper(username, limit));
 
             // Можно фильтровать при необходимости
-            // const filtered = reels.filter((r: any) => (r.commentsCount || 0) >= 100);
-            const filtered = reels;
-            logger.log(`📊 Отфильтровано ${filtered.length} видео`);
+            const filtered = reels.filter((r: any) => (r.commentsCount || 0) >= 100) as any[];
+
+            // Сортировка по количеству просмотров в порядке убывания
+            const sortedReels = filtered.sort((a, b) => b.videoPlayCount - a.videoPlayCount);
+
+            logger.log(`📊 Отфильтровано и отсортировано ${sortedReels.length} видео`);
 
             const enriched = await Promise.all(
                 filtered.map(async (video: any) => {
