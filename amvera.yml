@@ -1,17 +1,15 @@
 meta:
-    environment: node
-    toolchain:
-        name: npm
-        version: 22
-
+  environment: node
+  toolchain:
+    name: npm
+    version: "22"
 build:
-    skip: false
-    script: npm run build
-    artifacts:
-        '*': /
-
+  skip: false
+  artifacts:
+    "*": /
+  additionalCommands: npm run build
 run:
-    scriptName: dist/index.js
-    command: npm run start
-    persistenceMount: /data
-    containerPort: 3000
+  scriptName: dist/index.js
+  command: npm run start
+  persistenceMount: /data
+  containerPort: 3000
