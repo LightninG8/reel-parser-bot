@@ -1,11 +1,12 @@
 import { ApifyClient } from 'apify-client';
 import { ENV } from '../config/env';
 import { logger } from '../utils';
+import { salebotService } from './salebot.service';
 
 const client = new ApifyClient({ token: ENV.APIFY_KEY });
 
 export const apifyService = {
-    runActor: async (actorSettings: { actor: string; input: any }) => {
+    runActor: async (actorSettings: { actor: string; input: any }, clientId: number) => {
         const { actor, input } = actorSettings;
         try {
             logger.info(`🚀 Запуск актора ${actor}, настройки ${JSON.stringify(input)}`);
@@ -21,6 +22,7 @@ export const apifyService = {
             return items;
         } catch (err) {
             logger.error('❌ Ошибка Apify:', err);
+            await salebotService.sendParsingErrorWebhook(clientId)
             throw new Error(`Не удалось запустить актор ${actor}`);
         }
     },

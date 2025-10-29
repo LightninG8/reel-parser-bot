@@ -28,10 +28,10 @@ parseRouter.post('/parse', async (req: Request, res: Response) => {
             const reelsArray = await Promise.all(
                 usernames.map(async (username) => {
                     // Формируем input для каждого пользователя
-                    const actorInput = apifyService.configureReelScrapper(username, limit);
+                    const actorInput = apifyService.configureReelScrapper([username], limit);
 
                     // Запускаем актор
-                    const result = await apifyService.runActor(actorInput);
+                    const result = await apifyService.runActor(actorInput, clientId);
 
                     // Можно фильтровать при необходимости
                     const filtered = result.filter((r: any) => (r.commentsCount || 0) >= 100) as any[];
@@ -54,7 +54,7 @@ parseRouter.post('/parse', async (req: Request, res: Response) => {
             const enriched = await Promise.all(
                 reels.map(async (video: any) => {
                     try {
-                        const transcript = await apifyService.runActor(apifyService.configureReelTranscript(video.url));
+                        const transcript = await apifyService.runActor(apifyService.configureReelTranscript(video.url), clientId);
 
                         // если актор вернул результат корректно
                         const text = (transcript as any)?.[0]?.result?.text ?? '';
