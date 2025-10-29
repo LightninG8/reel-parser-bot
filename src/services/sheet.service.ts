@@ -8,7 +8,8 @@ export const sheetService = {
     createCsv: async (data: any[], filePath = './public/output.csv') => {
         try {
             // Формируем данные в удобном порядке
-            const rows = data.map((post) => ({
+            const rows = data.map((post, i) => ({
+                '№': i + 1,
                 Ссылка: post.url,
                 Аккаунт: post.ownerUsername,
                 Описание: post.caption?.replace(/\n/g, ' ') || '',
@@ -32,6 +33,7 @@ export const sheetService = {
 
             // Определяем порядок столбцов вручную
             const fields = [
+                '№',
                 'Ссылка',
                 'Аккаунт',
                 'Описание',
