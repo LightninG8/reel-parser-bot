@@ -9,25 +9,26 @@ export const sheetService = {
         try {
             // Формируем данные в удобном порядке
             const rows = data.map((post) => ({
+                Ссылка: post.url,
+                Аккаунт: post.ownerUsername,
+                Описание: post.caption?.replace(/\n/g, ' ') || '',
+                Лайки: post.likesCount,
+                Комментарии: post.commentsCount,
+                Просмотры: post.videoPlayCount ?? '',
+                Транскрипт: post.transcript?.replace(/\n/g, ' ') || '',
+                // Дополнительные поля, которые не были в списке
                 'ID поста': post.id,
                 Тип: post.type,
-                'Имя пользователя': post.ownerUsername,
                 'Полное имя': post.ownerFullName,
-                'Подпись (описание)': post.caption?.replace(/\n/g, ' ') || '',
                 'Первый комментарий': post.firstComment || '',
                 Хэштеги: post.hashtags?.join(', ') || '',
                 Упоминания: post.mentions?.join(', ') || '',
-                Лайков: post.likesCount,
-                Комментариев: post.commentsCount,
-                'Просмотров видео': post.videoPlayCount ?? '',
-                'Ссылка на пост': post.url,
                 'Дата публикации': post.timestamp,
                 'Ссылка на фото': post.displayUrl,
                 'Ссылки на изображения (если несколько)': post.images?.join(', ') || '',
                 'Ссылка на видео': post.videoUrl || '',
                 'Исполнитель (музыка)': post.musicInfo?.artist_name || '',
                 'Название трека': post.musicInfo?.song_name || '',
-                'Расшифровка речи (транскрипт)': post.transcript?.replace(/\n/g, ' ') || '',
             }));
 
             // Определяем порядок столбцов вручную
