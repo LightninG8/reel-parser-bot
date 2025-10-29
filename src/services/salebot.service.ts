@@ -10,11 +10,12 @@ export const salebotService = {
             count,
         });
     },
-    sendParsingProgressWebhook(clientId: number, progress_video_current: number) {
+    sendParsingProgressWebhook(clientId: number, progress_video_current: number, progress_account_username: string) {
         return axios.post(`https://chatter.salebot.pro/api/${ENV.SALEBOT_KEY}/callback`, {
             client_id: clientId,
             message: 'parsing_progress',
-            progress_video_current
+            progress_account_username,
+            progress_video_current,
         });
     },
     sendParsingErrorWebhook(clientId: number) {

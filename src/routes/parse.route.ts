@@ -34,7 +34,7 @@ parseRouter.post('/parse', async (req: Request, res: Response) => {
                     const result = await apifyService.runActor(actorInput);
 
                     // Вызываем вебхук после завершения каждого пользователя
-                    await salebotService.sendParsingProgressWebhook(username, result.length);
+                    await salebotService.sendParsingProgressWebhook(username, result.length, username);
 
                     return result;
                 })
