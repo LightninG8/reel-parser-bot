@@ -67,7 +67,7 @@ parseRouter.post('/parse', async (req: Request, res: Response) => {
 
             logger.log(`📊 Отфильтровано и отсортировано ${sortedReels.length} видео`);
 
-            const sheetUrl = await sheetService.createCsv(sortedReels, `./public/${clientId}/Результаты.csv`);
+            const sheetUrl = await sheetService.createCsv(sortedReels, `./public/${new Date().getTime()}/${clientId}/Результаты.csv`);
 
             await salebotService.sendParsingSuccessWebhook(clientId, sheetUrl, sortedReels.length);
         };
