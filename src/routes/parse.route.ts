@@ -5,15 +5,15 @@ import { logger } from '../utils';
 const parseRouter = Router();
 
 parseRouter.post('/parse', async (req: Request, res: Response) => {
-    let username = req.body['username'];
+    let usernames = req.body['usernames'];
     const clientId = +req.body['clientId'];
     const limit = +req.body['limit'];
 
-    if (typeof username === 'string') {
-        username = JSON.parse(username);
+    if (typeof usernames === 'string') {
+        usernames = JSON.parse(usernames);
     }
 
-    if (!Array.isArray(username) || username.length === 0) {
+    if (!Array.isArray(usernames) || usernames.length === 0) {
         return res.status(400).json({ error: 'Invalid request: username[] обязательно' });
     }
 
@@ -25,7 +25,23 @@ parseRouter.post('/parse', async (req: Request, res: Response) => {
         const flow = async () => {
             logger.log('🔄 Запуск парсинга Instagram аккаунтов...');
 
-            const reels = await apifyService.runActor(apifyService.configureReelScrapper(username, limit));
+            const reelsArray = await Promise.all(
+                usernames.map(async (username) => {
+                    // Формируем input для каждого пользователя
+                    const actorInput = apifyService.configureReelScrapper(username, limit);
+
+                    // Запускаем актор
+                    const result = await apifyService.runActor(actorInput);
+
+                    // Вызываем вебхук после завершения каждого пользователя
+                    await salebotService.sendParsingProgressWebhook(username, result.length);
+
+                    return result;
+                })
+            );
+
+            // Объединяем все результаты в один массив
+            const reels = reelsArray.flat();
 
             // Можно фильтровать при необходимости
             const filtered = reels.filter((r: any) => (r.commentsCount || 0) >= 100) as any[];
