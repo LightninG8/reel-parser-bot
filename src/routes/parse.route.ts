@@ -14,7 +14,7 @@ parseRouter.post('/parse', async (req: Request, res: Response) => {
     }
 
     if (!Array.isArray(usernames) || usernames.length === 0) {
-        return res.status(400).json({ error: 'Invalid request: username[] обязательно' });
+        return res.status(400).json({ error: 'Invalid request: usernames[] обязательно' });
     }
 
     if (!clientId) {
@@ -37,7 +37,7 @@ parseRouter.post('/parse', async (req: Request, res: Response) => {
                     const filtered = result.filter((r: any) => (r.commentsCount || 0) >= 100) as any[];
 
                     // Вызываем вебхук после завершения каждого пользователя
-                    await salebotService.sendParsingProgressWebhook(username, filtered.length, username);
+                    await salebotService.sendParsingProgressWebhook(clientId, filtered.length, username);
 
                     return filtered;
                 })
