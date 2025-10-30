@@ -80,7 +80,7 @@ parseRouter.post('/parse', async (req: Request, res: Response) => {
             logger.info(`📦 Успешно: ${successCount}, Ошибок: ${failCount}`);
             logger.info('💾 Результаты сохранены в dataset_with_transcripts.json');
 
-            const sheetUrl = await sheetService.createCsv(reels, `./public/${new Date().getTime()}/${clientId}/Результаты.csv`);
+            const sheetUrl = await sheetService.createCsv(reels, `./public/${clientId}/${new Date().getTime()}/Результаты.csv`);
 
             await salebotService.sendParsingSuccessWebhook(clientId, sheetUrl, reels.length);
         };
