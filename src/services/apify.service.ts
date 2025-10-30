@@ -22,7 +22,7 @@ export const apifyService = {
             return items;
         } catch (err) {
             logger.error('❌ Ошибка Apify:', err);
-            await salebotService.sendParsingErrorWebhook(clientId)
+            // await salebotService.sendParsingErrorWebhook(clientId)
             throw new Error(`Не удалось запустить актор ${actor}`);
         }
     },
