@@ -6,12 +6,12 @@ import { salebotService } from './salebot.service';
 const client = new ApifyClient({ token: ENV.APIFY_KEY });
 
 export const apifyService = {
-    runActor: async (actorSettings: { actor: string; input: any }, clientId: number) => {
-        const { actor, input } = actorSettings;
+    runActor: async (actorSettings: { actor: string; input: any; options: any }) => {
+        const { actor, input, options } = actorSettings;
         try {
             logger.info(`🚀 Запуск актора ${actor}, настройки ${JSON.stringify(input)}`);
 
-            const run = await client.actor(actor).call(input);
+            const run = await client.actor(actor).call(input, options);
 
             // ждем завершения выполнения актора и получения данных
             const dataset = await client.dataset(run.defaultDatasetId).listItems();
@@ -22,19 +22,22 @@ export const apifyService = {
             return items;
         } catch (err) {
             logger.error('❌ Ошибка Apify:', err);
-            // await salebotService.sendParsingErrorWebhook(clientId)
+
             throw new Error(`Не удалось запустить актор ${actor}`);
         }
     },
 
-    configureReelScrapper(username: string[], resultsLimit = 1000) {
+    configureReelScrapper(tags: string[], reels_count = 1000) {
         return {
-            actor: 'apify/instagram-reel-scraper',
+            actor: 'hpix/ig-reels-scraper',
             input: {
-                includeSharesCount: false,
-                resultsLimit,
-                username,
+                custom_functions: '{ shouldSkip: (data) => data.comment_count < 200, shouldContinue: (data) => true }',
+                include_raw_data: true,
+                reels_count,
+                tags,
+                target: 'reels_only',
             },
+            options: { memory: 1024 },
         };
     },
     configureReelTranscript(link: string) {
@@ -48,6 +51,7 @@ export const apifyService = {
                 response_format: 'json',
                 task: 'transcription',
             },
+            options: { memory: 128 },
         };
     },
 };

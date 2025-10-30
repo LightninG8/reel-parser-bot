@@ -23,53 +23,66 @@ parseRouter.post('/parse', async (req: Request, res: Response) => {
 
     try {
         const flow = async () => {
-            logger.log('🔄 Запуск парсинга Instagram аккаунтов...');
+            const reels = await apifyService.runActor(apifyService.configureReelScrapper(usernames, limit));
 
-            const reelsArray = await Promise.all(
-                usernames.map(async (username) => {
-                    // Формируем input для каждого пользователя
-                    const actorInput = apifyService.configureReelScrapper([username], limit);
+            const CONCURRENCY_LIMIT = 16;
+            let index = 0;
+            let completed = 0;
+            let successCount = 0;
+            let failCount = 0;
 
-                    // Запускаем актор
-                    const result = await apifyService.runActor(actorInput, clientId);
+            const total = reels.length;
+            const results: any[] = [];
 
-                    // Можно фильтровать при необходимости
-                    const filtered = result.filter((r: any) => (r.commentsCount || 0) >= 100) as any[];
+            logger.info(`🚀 Начинаем обработку ${total} рилов (до ${CONCURRENCY_LIMIT} одновременно)...`);
 
-                    const enriched = await Promise.all(
-                        filtered.map(async (video: any) => {
-                            try {
-                                const transcript = await apifyService.runActor(apifyService.configureReelTranscript(video.url), clientId);
+            // Функция для запуска одного задания
+            async function runNext() {
+                if (index >= reels.length) return;
 
-                                // если актор вернул результат корректно
-                                const text = (transcript as any)?.[0]?.result?.text ?? '';
-                                return { ...video, transcript: text };
-                            } catch (error) {
-                                // логируем, но не прерываем выполнение
-                                logger.error(`⚠️ Ошибка при транскрипции видео ${video.url}:`, error);
-                                return { ...video, transcript: '' }; // возвращаем видео без поля transcript
-                            }
-                        })
-                    );
+                const reel = reels[index++];
+                const currentIndex = index;
 
-                    // Вызываем вебхук после завершения каждого пользователя
-                    await salebotService.sendParsingProgressWebhook(clientId, enriched.length, usernames.length, username);
+                logger.info(`🎬 [${currentIndex}/${total}] Запуск обработки ${reel.code}...`);
 
-                    return enriched;
-                })
-            );
+                try {
+                    const result = await apifyService.runActor(apifyService.configureReelTranscript(`https://instagram.com/p/${reel.code}`));
 
-            // Объединяем все результаты в один массив
-            const reels = reelsArray.flat();
+                    const text = (result as any)?.result?.text ?? '';
+                    successCount++;
 
-            // Сортировка по количеству просмотров в порядке убывания
-            const sortedReels = reels.sort((a, b) => b.videoPlayCount - a.videoPlayCount);
+                    results.push({ ...reel, transcript: text });
 
-            logger.log(`📊 Отфильтровано и отсортировано ${sortedReels.length} видео`);
+                    logger.info(`✅ [${currentIndex}/${total}] Готово (${((completed / total) * 100).toFixed(1)}%) — ${reel.code}`);
+                    if (text) {
+                        logger.info(`🗣️ Пример: ${text.slice(0, 60).replace(/\n/g, ' ')}...`);
+                    }
+                } catch (err: any) {
+                    failCount++;
+                    logger.error(`❌ [${currentIndex}/${total}] Ошибка при обработке ${reel.code}:`, err.message);
+                    results.push({ ...reel, transcript: null });
+                }
 
-            const sheetUrl = await sheetService.createCsv(sortedReels, `./public/${new Date().getTime()}/${clientId}/Результаты.csv`);
+                completed++;
+                const percent = ((completed / total) * 100).toFixed(1);
+                logger.info(`📊 Прогресс: ${completed}/${total} (${percent}%) | ✅ ${successCount} | ❌ ${failCount}`);
 
-            await salebotService.sendParsingSuccessWebhook(clientId, sheetUrl, sortedReels.length);
+                // запускаем следующее после завершения
+                await runNext();
+            }
+
+            // Запускаем максимум N задач одновременно
+            const workers = Array(CONCURRENCY_LIMIT).fill(null).map(runNext);
+            await Promise.all(workers);
+
+            // 3. Сохраняем результат в новый файл
+            logger.info('\n🎉 Все рилы обработаны!');
+            logger.info(`📦 Успешно: ${successCount}, Ошибок: ${failCount}`);
+            logger.info('💾 Результаты сохранены в dataset_with_transcripts.json');
+
+            const sheetUrl = await sheetService.createCsv(reels, `./public/${new Date().getTime()}/${clientId}/Результаты.csv`);
+
+            await salebotService.sendParsingSuccessWebhook(clientId, sheetUrl, reels.length);
         };
 
         flow();
