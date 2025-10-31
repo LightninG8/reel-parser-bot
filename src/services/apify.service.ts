@@ -37,7 +37,7 @@ export const apifyService = {
                 tags,
                 target: 'reels_only',
             },
-            options: { memory: 1024 },
+            options: { memory: 1024, timeout: 1800 },
         };
     },
     configureReelTranscript(link: string) {
@@ -51,7 +51,7 @@ export const apifyService = {
                 response_format: 'json',
                 task: 'transcription',
             },
-            options: { memory: 128 },
+            options: { memory: 128, timeout: 1800 },
         };
     },
 };

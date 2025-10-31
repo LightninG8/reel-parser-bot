@@ -48,7 +48,7 @@ parseRouter.post('/parse', async (req: Request, res: Response) => {
                 try {
                     const result = await apifyService.runActor(apifyService.configureReelTranscript(`https://instagram.com/p/${reel.code}`));
 
-                    const text = (result as any)?.result?.text ?? '';
+                    const text = (result as any)[0]?.result?.text ?? '';
                     successCount++;
 
                     results.push({ ...reel, transcript: text });
@@ -80,7 +80,7 @@ parseRouter.post('/parse', async (req: Request, res: Response) => {
             logger.info(`📦 Успешно: ${successCount}, Ошибок: ${failCount}`);
             logger.info('💾 Результаты сохранены в dataset_with_transcripts.json');
 
-            const sheetUrl = await sheetService.createCsv(reels, `./public/${clientId}/${new Date().getTime()}/Результаты.csv`);
+            const sheetUrl = await sheetService.createCsv(results, `./public/${clientId}/${new Date().getTime()}/Результаты.csv`);
 
             await salebotService.sendParsingSuccessWebhook(clientId, sheetUrl, reels.length);
         };
