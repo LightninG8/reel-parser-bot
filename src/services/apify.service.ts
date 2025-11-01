@@ -27,20 +27,20 @@ export const apifyService = {
         }
     },
 
-    configureReelScrapper(tags: string[], reels_count = 1000) {
+    configureReelScrapper(tags: string[], reels_count = 1000, comment_count = 200, timeout = 1200) {
         return {
             actor: 'hpix/ig-reels-scraper',
             input: {
-                custom_functions: '{ shouldSkip: (data) => data.comment_count < 200, shouldContinue: (data) => true }',
+                custom_functions: `{ shouldSkip: (data) => data.comment_count < ${comment_count}, shouldContinue: (data) => true }`,
                 include_raw_data: true,
                 reels_count,
                 tags,
                 target: 'reels_only',
             },
-            options: { memory: 1024, timeout: 1800 },
+            options: { memory: 1024, timeout },
         };
     },
-    configureReelTranscript(link: string) {
+    configureReelTranscript(link: string, timeout = 1200) {
         return {
             actor: 'linen_snack/instagram-videos-transcipt-subtitles-and-translate',
             input: {
@@ -51,7 +51,7 @@ export const apifyService = {
                 response_format: 'json',
                 task: 'transcription',
             },
-            options: { memory: 128, timeout: 1800 },
+            options: { memory: 128, timeout },
         };
     },
 };

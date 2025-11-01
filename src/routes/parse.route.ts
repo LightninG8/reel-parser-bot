@@ -8,6 +8,8 @@ parseRouter.post('/parse', async (req: Request, res: Response) => {
     let usernames = req.body['usernames'];
     const clientId = +req.body['clientId'];
     const limit = +req.body['limit'];
+    const comments = +req.body['comments'];
+    const timeout = +req.body['timeout'];
 
     if (typeof usernames === 'string') {
         usernames = JSON.parse(usernames);
@@ -23,7 +25,7 @@ parseRouter.post('/parse', async (req: Request, res: Response) => {
 
     try {
         const flow = async () => {
-            const reels = await apifyService.runActor(apifyService.configureReelScrapper(usernames, limit));
+            const reels = await apifyService.runActor(apifyService.configureReelScrapper(usernames, limit, comments, timeout));
 
             const CONCURRENCY_LIMIT = 16;
             let index = 0;
@@ -46,7 +48,7 @@ parseRouter.post('/parse', async (req: Request, res: Response) => {
                 logger.info(`🎬 [${currentIndex}/${total}] Запуск обработки ${reel.code}...`);
 
                 try {
-                    const result = await apifyService.runActor(apifyService.configureReelTranscript(`https://instagram.com/p/${reel.code}`));
+                    const result = await apifyService.runActor(apifyService.configureReelTranscript(`https://instagram.com/p/${reel.code}`, timeout));
 
                     const text = (result as any)[0]?.result?.text ?? '';
                     successCount++;
