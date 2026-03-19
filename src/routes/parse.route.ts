@@ -31,18 +31,13 @@ parseRouter.post("/parse", async (req: Request, res: Response) => {
 
   try {
     const flow = async () => {
-      const now = Date.now(); // текущее время в мс
-      const deltaDays = days * 24 * 60 * 60 * 1000; // days дней в мс
-
-      const timestamp = now - deltaDays;
-
       const reels = await apifyService.runActor(
         apifyService.configureReelScrapper(
           usernames,
           limit,
           comments,
           play_count,
-          timestamp,
+          days,
           timeout,
         ),
       );
