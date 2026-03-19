@@ -1,100 +1,144 @@
-import { Router, Request, Response } from 'express';
-import { apifyService, salebotService, sheetService } from '../services';
-import { logger } from '../utils';
+import { Router, Request, Response } from "express";
+import { apifyService, salebotService, sheetService } from "../services";
+import { logger } from "../utils";
 
 const parseRouter = Router();
 
-parseRouter.post('/parse', async (req: Request, res: Response) => {
-    let usernames = req.body['usernames'];
-    const clientId = +req.body['clientId'];
-    const limit = +req.body['limit'];
-    const comments = +req.body['comments'];
-    const timeout = +req.body['timeout'];
+parseRouter.post("/parse", async (req: Request, res: Response) => {
+  let usernames = req.body["usernames"];
+  const clientId = +req.body["clientId"];
+  const limit = +req.body["limit"];
+  const comments = +req.body["comments"];
+  const play_count = +req.body["play_count"];
+  const days = +req.body["days"];
+  const timeout = +req.body["timeout"];
 
-    if (typeof usernames === 'string') {
-        usernames = JSON.parse(usernames);
-    }
+  if (typeof usernames === "string") {
+    usernames = JSON.parse(usernames);
+  }
 
-    if (!Array.isArray(usernames) || usernames.length === 0) {
-        return res.status(400).json({ error: 'Invalid request: usernames[] обязательно' });
-    }
+  if (!Array.isArray(usernames) || usernames.length === 0) {
+    return res
+      .status(400)
+      .json({ error: "Invalid request: usernames[] обязательно" });
+  }
 
-    if (!clientId) {
-        return res.status(400).json({ error: 'Invalid request: clientId обязательно' });
-    }
+  if (!clientId) {
+    return res
+      .status(400)
+      .json({ error: "Invalid request: clientId обязательно" });
+  }
 
-    try {
-        const flow = async () => {
-            const reels = await apifyService.runActor(apifyService.configureReelScrapper(usernames, limit, comments, timeout));
+  try {
+    const flow = async () => {
+      const now = Date.now(); // текущее время в мс
+      const deltaDays = days * 24 * 60 * 60 * 1000; // days дней в мс
 
-            const CONCURRENCY_LIMIT = 16;
-            let index = 0;
-            let completed = 0;
-            let successCount = 0;
-            let failCount = 0;
+      const timestamp = now - deltaDays;
 
-            const total = reels.length;
-            const results: any[] = [];
+      const reels = await apifyService.runActor(
+        apifyService.configureReelScrapper(
+          usernames,
+          limit,
+          comments,
+          play_count,
+          timestamp,
+          timeout,
+        ),
+      );
 
-            logger.info(`🚀 Начинаем обработку ${total} рилов (до ${CONCURRENCY_LIMIT} одновременно)...`);
+      // const CONCURRENCY_LIMIT = 16;
+      // let index = 0;
+      // let completed = 0;
+      // let successCount = 0;
+      // let failCount = 0;
 
-            // Функция для запуска одного задания
-            async function runNext() {
-                if (index >= reels.length) return;
+      // const total = reels.length;
+      // const results: any[] = [];
 
-                const reel = reels[index++];
-                const currentIndex = index;
+      // logger.info(
+      //   `🚀 Начинаем обработку ${total} рилов (до ${CONCURRENCY_LIMIT} одновременно)...`,
+      // );
 
-                logger.info(`🎬 [${currentIndex}/${total}] Запуск обработки ${reel.code}...`);
+      // // Функция для запуска одного задания
+      // async function runNext() {
+      //   if (index >= reels.length) return;
 
-                try {
-                    const result = await apifyService.runActor(apifyService.configureReelTranscript(`https://instagram.com/p/${reel.code}`, timeout));
+      //   const reel = reels[index++];
+      //   const currentIndex = index;
 
-                    const text = (result as any)[0]?.result?.text ?? '';
-                    successCount++;
+      //   logger.info(
+      //     `🎬 [${currentIndex}/${total}] Запуск обработки ${reel.code}...`,
+      //   );
 
-                    results.push({ ...reel, transcript: text });
+      //   try {
+      //     const result = await apifyService.runActor(
+      //       apifyService.configureReelTranscript(
+      //         `https://instagram.com/p/${reel.code}`,
+      //         timeout,
+      //       ),
+      //     );
 
-                    logger.info(`✅ [${currentIndex}/${total}] Готово (${((completed / total) * 100).toFixed(1)}%) — ${reel.code}`);
-                    if (text) {
-                        logger.info(`🗣️ Пример: ${text.slice(0, 60).replace(/\n/g, ' ')}...`);
-                    }
-                } catch (err: any) {
-                    failCount++;
-                    logger.error(`❌ [${currentIndex}/${total}] Ошибка при обработке ${reel.code}:`, err.message);
-                    results.push({ ...reel, transcript: null });
-                }
+      //     const text = (result as any)[0]?.result?.text ?? "";
+      //     successCount++;
 
-                completed++;
-                const percent = ((completed / total) * 100).toFixed(1);
-                logger.info(`📊 Прогресс: ${completed}/${total} (${percent}%) | ✅ ${successCount} | ❌ ${failCount}`);
+      //     results.push({ ...reel, transcript: text });
 
-                // запускаем следующее после завершения
-                await runNext();
-            }
+      //     logger.info(
+      //       `✅ [${currentIndex}/${total}] Готово (${((completed / total) * 100).toFixed(1)}%) — ${reel.code}`,
+      //     );
+      //     if (text) {
+      //       logger.info(
+      //         `🗣️ Пример: ${text.slice(0, 60).replace(/\n/g, " ")}...`,
+      //       );
+      //     }
+      //   } catch (err: any) {
+      //     failCount++;
+      //     logger.error(
+      //       `❌ [${currentIndex}/${total}] Ошибка при обработке ${reel.code}:`,
+      //       err.message,
+      //     );
+      //     results.push({ ...reel, transcript: null });
+      //   }
 
-            // Запускаем максимум N задач одновременно
-            const workers = Array(CONCURRENCY_LIMIT).fill(null).map(runNext);
-            await Promise.all(workers);
+      //   completed++;
+      //   const percent = ((completed / total) * 100).toFixed(1);
+      //   logger.info(
+      //     `📊 Прогресс: ${completed}/${total} (${percent}%) | ✅ ${successCount} | ❌ ${failCount}`,
+      //   );
 
-            // 3. Сохраняем результат в новый файл
-            logger.info('\n🎉 Все рилы обработаны!');
-            logger.info(`📦 Успешно: ${successCount}, Ошибок: ${failCount}`);
-            logger.info('💾 Результаты сохранены в dataset_with_transcripts.json');
+      //   // запускаем следующее после завершения
+      //   await runNext();
+      // }
 
-            const sheetUrl = await sheetService.createCsv(results, `./public/${clientId}/${new Date().getTime()}/Результаты.csv`);
+      // // Запускаем максимум N задач одновременно
+      // const workers = Array(CONCURRENCY_LIMIT).fill(null).map(runNext);
+      // await Promise.all(workers);
 
-            await salebotService.sendParsingSuccessWebhook(clientId, sheetUrl, reels.length);
-        };
+      // 3. Сохраняем результат в новый файл
+      logger.info("\n🎉 Все рилы обработаны!");
+      logger.info("💾 Результаты сохранены в dataset_with_transcripts.json");
 
-        flow();
+      const sheetUrl = await sheetService.createCsv(
+        reels,
+        `./public/${clientId}/${new Date().getTime()}/Результаты.csv`,
+      );
 
-        res.status(200).json({ status: 'Parsing started' });
-    } catch (err) {
-        logger.error('❌ Ошибка при запуске парсинга:', err);
-        await salebotService.sendServerErrorWebhook(clientId);
-        res.status(500).json({ error: 'Failed to start parsing', message: err });
-    }
+      await salebotService.sendParsingSuccessWebhook(
+        clientId,
+        sheetUrl,
+        reels.length,
+      );
+    };
+
+    flow();
+
+    res.status(200).json({ status: "Parsing started" });
+  } catch (err) {
+    logger.error("❌ Ошибка при запуске парсинга:", err);
+    await salebotService.sendServerErrorWebhook(clientId);
+    res.status(500).json({ error: "Failed to start parsing", message: err });
+  }
 });
 
 export default parseRouter;

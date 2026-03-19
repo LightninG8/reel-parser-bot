@@ -27,11 +27,11 @@ export const apifyService = {
         }
     },
 
-    configureReelScrapper(tags: string[], reels_count = 1000, comment_count = 200, timeout = 1200) {
+    configureReelScrapper(tags: string[], reels_count = 1000, comment_count = 200, play_count = 10000, timestamp = (new Date).getTime(), timeout = 1200) {
         return {
             actor: 'hpix/ig-reels-scraper',
             input: {
-                custom_functions: `{ shouldSkip: (data) => data.comment_count < ${comment_count}, shouldContinue: (data) => true }`,
+                custom_functions: `{ shouldSkip: (data) => data.comment_count < ${comment_count} || data.play_count < ${play_count} || data.raw_data.device_timestamp < ${timestamp}, shouldContinue: (data) => true }`,
                 include_raw_data: true,
                 reels_count,
                 tags,
