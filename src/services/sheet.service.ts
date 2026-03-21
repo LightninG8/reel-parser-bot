@@ -30,7 +30,7 @@ export const sheetService = {
                 // 'Первый комментарий': post.firstComment || '',
                 // Хэштеги: post.hashtags?.join(', ') || '',
                 // Упоминания: post.mentions?.join(', ') || '',
-                'Дата публикации': post.timestamp,
+                'Дата публикации': post.taken_at,
                 // 'Ссылка на фото': post.displayUrl,
                 // 'Ссылки на изображения (если несколько)': post.images?.join(', ') || '',
                 // 'Ссылка на видео': post.videoUrl || '',
