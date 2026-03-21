@@ -49,7 +49,7 @@ export const apifyService = {
     return {
       actor: "hpix/ig-reels-scraper",
       input: {
-        custom_functions: `{ shouldSkip: (data) => ${days == 30 ? `data.comment_count < ${comment_count}` : `data.play_count < ${play_count}`} || data.raw_data.device_timestamp < ${timestamp}, shouldContinue: (data) => true }`,
+        custom_functions: `{ shouldSkip: (data) => ${days == 30 ? `data.comment_count < ${comment_count}` : `data.play_count < ${play_count}`} || data.timestamp < ${timestamp}, shouldContinue: (data) => true }`,
         include_raw_data: true,
         reels_count,
         tags,
