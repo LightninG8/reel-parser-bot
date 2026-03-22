@@ -41,16 +41,15 @@ export const apifyService = {
     days = 7,
     timeout = 1200,
   ) {
-    const now = Date.now(); // текущее время в мс
-    const deltaDays = days * 24 * 60 * 60 * 1000; // days дней в мс
+    const now = Math.floor(Date.now() / 1000); // текущее время в секундах
+    const deltaDays = days * 24 * 60 * 60; // days дней в секундах
 
     const timestamp = now - deltaDays;
 
-    // || data.taken_at < ${timestamp}
     return {
       actor: "hpix/ig-reels-scraper",
       input: {
-        custom_functions: `{ shouldSkip: (data) => ${days == 30 ? `data.comment_count < ${comment_count}` : `data.play_count < ${play_count}`}, shouldContinue: (data) => true }`,
+        custom_functions: `{ shouldSkip: (data) => ${days == 30 ? `data.comment_count < ${comment_count}` : `data.play_count < ${play_count}`} || data.taken_at < ${timestamp}, shouldContinue: (data) => true }`,
         include_raw_data: true,
         reels_count,
         tags,
